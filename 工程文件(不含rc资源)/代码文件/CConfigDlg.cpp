@@ -63,6 +63,8 @@ BOOL CConfigDlg::OnInitDialog()
 	{
 		pPathEditor->SetWindowText(szBuf_path);				//初始化路径，热键设置信息显示
 		pHotKey1->SetHotKey(nBuf_Key[0], nBuf_Key[1]);
+		UnregisterHotKey(g_hWndMain, g_nHotKeyID);			//注销热键
+		++g_nHotKeyID;
 	}
 	else
 	{
@@ -139,21 +141,15 @@ void CConfigDlg::OnBnClickedSave()
 		return;
 	}
 
-	g_myObj.GetHotKeyCfg(nBuf_oldKey);
 
-	if (nBuf_Key[0] != nBuf_oldKey[0] ||
-		nBuf_Key[1] != nBuf_oldKey[1]) //热键更新判断
+	if (!RegisterHotKey(g_hWndMain, g_nHotKeyID, nBuf_Key[1], nBuf_Key[0]))		//注册新热键
 	{
-		UnregisterHotKey(g_hWndMain, g_nHotKeyID);
-		++g_nHotKeyID;	
-		if (!RegisterHotKey(g_hWndMain, g_nHotKeyID, nBuf_Key[1], nBuf_Key[0]))
-		{
-			::MessageBox(NULL,TEXT("注册热键失败, 热键已被其他程序占用, 请设置其他热键"), g_tszMsgTitle, MB_OK | MB_ICONERROR);
-			g_RegisterHotKeyState = FALSE;
-			return;
-		}
-		g_RegisterHotKeyState = TRUE;
+		::MessageBox(NULL,TEXT("注册热键失败, 热键已被其他程序占用, 请设置其他热键"), g_tszMsgTitle, MB_OK | MB_ICONERROR);
+		g_RegisterHotKeyState = FALSE;
+		return;
 	}
+	g_RegisterHotKeyState = TRUE;
+	
 
 
 	if (!(g_myObj.SetHotKeyCfg(nBuf_Key) &&
@@ -171,6 +167,16 @@ void CConfigDlg::OnBnClickedSave()
 void CConfigDlg::OnBnClickedCancel()
 {
 	// TODO: 在此添加控件通知处理程序代码
+	WORD nBuf_oldKey[2];						//以前的热键注册
+	g_myObj.GetHotKeyCfg(nBuf_oldKey);
+	if (!RegisterHotKey(g_hWndMain, g_nHotKeyID, nBuf_oldKey[1], nBuf_oldKey[0]))
+	{
+		::MessageBox(NULL, TEXT("注册热键失败, 热键已被其他程序占用, 请设置其他热键"), g_tszMsgTitle, MB_OK | MB_ICONERROR);
+		g_RegisterHotKeyState = FALSE;
+		return;
+	}
+	g_RegisterHotKeyState = TRUE;
+
 	CDialog::OnCancel();
 }
 
